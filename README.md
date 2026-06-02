@@ -22,6 +22,7 @@
 - Node.js 20+
 - Ключ [GigaChat](https://developers.sber.ru/docs/ru/gigachat)
 - Ключ [Tavily](https://tavily.com/)
+- (Опционально) ключ [LangSmith](https://smith.langchain.com/) для трассировки графа и LLM-вызовов
 
 ## Установка
 
@@ -61,3 +62,8 @@ npm run dev
 | `GIGACHAT_CREDENTIALS` | Authorization key GigaChat |
 | `TAVILY_API_KEY` | API key Tavily |
 | `PORT` | Порт API (по умолчанию 3001) |
+| `LANGSMITH_TRACING` | `true` — отправлять трейсы в LangSmith |
+| `LANGSMITH_API_KEY` | API key из [настроек LangSmith](https://smith.langchain.com/settings) |
+| `LANGSMITH_PROJECT` | Имя проекта в LangSmith (по умолчанию `flower-safety-advisor`) |
+
+После запуска с включённой трассировкой каждый запрос `/api/ask` появляется в LangSmith как run графа с узлами `normalize` → `localDb` → … и вложенными вызовами GigaChat.

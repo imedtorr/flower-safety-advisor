@@ -1,4 +1,6 @@
+import "./env.js";
 import { END, START, StateGraph } from "@langchain/langgraph";
+import { getGraphInvokeConfig } from "./lib/langsmith.js";
 import { GraphState, type GraphStateType } from "./state.js";
 import { normalizeNode } from "./nodes/normalize.js";
 import { localDbNode } from "./nodes/localDb.js";
@@ -46,15 +48,18 @@ const workflow = new StateGraph(GraphState)
 export const graph = workflow.compile();
 
 export async function runAdvisor(query: string) {
-  const result = await graph.invoke({
-    rawQuery: query,
-    normalized: null,
-    source: null,
-    facts: [],
-    riskLevel: "unknown",
-    answer: "",
-    found: false,
-  });
+  const result = await graph.invoke(
+    {
+      rawQuery: query,
+      normalized: null,
+      source: null,
+      facts: [],
+      riskLevel: "unknown",
+      answer: "",
+      found: false,
+    },
+    getGraphInvokeConfig(query),
+  );
 
   return {
     answer: result.answer,

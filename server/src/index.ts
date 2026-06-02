@@ -1,11 +1,8 @@
-import dotenv from "dotenv";
-import { resolve } from "node:path";
-
-dotenv.config({ path: resolve(process.cwd(), "../.env") });
-dotenv.config();
+import "./env.js";
 import cors from "cors";
 import express from "express";
 import { askRouter } from "./routes/ask.js";
+import { logLangSmithStatus } from "./lib/langsmith.js";
 
 const app = express();
 const port = Number(process.env.PORT) || 3001;
@@ -20,5 +17,6 @@ app.get("/api/health", (_req, res) => {
 app.use("/api", askRouter);
 
 app.listen(port, () => {
+  logLangSmithStatus();
   console.log(`Flower Safety Advisor API → http://localhost:${port}`);
 });
