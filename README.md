@@ -4,9 +4,18 @@
 
 ## Архитектура
 
+**Текстовый запрос:**
+
 ```
-Пользователь → React UI → Express API → LangGraph
+Пользователь → React UI → POST /api/ask → LangGraph
   normalize → localDb → externalApi → tavily → fallback → composeAnswer (GigaChat)
+```
+
+**Фото букета:**
+
+```
+Пользователь → React UI → POST /api/analyze-photo → LangGraph (photo)
+  visionIdentify (GigaChat-Pro) → bouquetLookup → composeBouquetReport
 ```
 
 | Шаг | Источник |
@@ -20,7 +29,7 @@
 ## Требования
 
 - Node.js 20+
-- Ключ [GigaChat](https://developers.sber.ru/docs/ru/gigachat)
+- Ключ [GigaChat](https://developers.sber.ru/docs/ru/gigachat) (для фото — доступ к vision-модели, например **GigaChat-Pro**)
 - Ключ [Tavily](https://tavily.com/)
 - (Опционально) ключ [LangSmith](https://smith.langchain.com/) для трассировки графа и LLM-вызовов
 
@@ -46,8 +55,17 @@ npm run dev
 | «Розы и кот на столе» | Локальная БД |
 | Редкое растение из ASPCA | Внешний API |
 | Экзотический цветок | Веб-поиск / Общие советы |
+| Вкладка «Фото букета» + снимок с розами/лилиями | Vision → local / mixed |
 
 В UI отображается badge источника и уровня риска.
+
+### Анализ фото (curl)
+
+```bash
+curl -X POST http://localhost:3001/api/analyze-photo \
+  -F "image=@/path/to/bouquet.jpg" \
+  -F "query=Проверь этот букет на безопасность для кошки"
+```
 
 ## Структура
 
@@ -60,10 +78,11 @@ npm run dev
 | Переменная | Описание |
 |------------|----------|
 | `GIGACHAT_CREDENTIALS` | Authorization key GigaChat |
+| `GIGACHAT_VISION_MODEL` | Модель для распознавания фото (по умолчанию `GigaChat-Pro`) |
 | `TAVILY_API_KEY` | API key Tavily |
 | `PORT` | Порт API (по умолчанию 3001) |
 | `LANGSMITH_TRACING` | `true` — отправлять трейсы в LangSmith |
 | `LANGSMITH_API_KEY` | API key из [настроек LangSmith](https://smith.langchain.com/settings) |
 | `LANGSMITH_PROJECT` | Имя проекта в LangSmith (по умолчанию `flower-safety-advisor`) |
 
-После запуска с включённой трассировкой каждый запрос `/api/ask` появляется в LangSmith как run графа с узлами `normalize` → `localDb` → … и вложенными вызовами GigaChat.
+После запуска с включённой трассировкой запросы `/api/ask` и `/api/analyze-photo` появляются в LangSmith как run графа с узлами и вложенными вызовами GigaChat.

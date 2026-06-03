@@ -2,7 +2,7 @@ import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import type { GraphStateType } from "../state.js";
 import { createGigaChat } from "../lib/gigachat.js";
 import { formatNormalizedFlower } from "./normalize.js";
-import type { RiskLevel } from "../state.js";
+import { inferRiskFromAnswer } from "../lib/answerRisk.js";
 
 const SOURCE_LABELS: Record<string, string> = {
   local: "локальная база знаний",
@@ -10,24 +10,6 @@ const SOURCE_LABELS: Record<string, string> = {
   tavily: "веб-поиск",
   fallback: "общие рекомендации",
 };
-
-function inferRiskFromAnswer(text: string, current: RiskLevel): RiskLevel {
-  const lower = text.toLowerCase();
-  if (
-    /опасн|срочно|не держите|не рекоменду|высок.*токсич|почечн|летальн/i.test(
-      lower,
-    )
-  ) {
-    return "danger";
-  }
-  if (/осторож|умерен|возможн.*рвот|следите/i.test(lower)) {
-    return current === "danger" ? "danger" : "caution";
-  }
-  if (/безопас|низк.*риск|обычно нетоксич|малоопас/i.test(lower)) {
-    return current === "unknown" ? "safe" : current;
-  }
-  return current;
-}
 
 export async function composeAnswerNode(
   state: GraphStateType,

@@ -1,7 +1,19 @@
 import { useState } from "react";
-import { askAdvisor, type AskResponse } from "./api/client";
+import {
+  analyzeBouquetPhoto,
+  askAdvisor,
+  type AskResponse,
+  type PhotoAnalyzeResponse,
+} from "./api/client";
 import { AskForm } from "./components/AskForm";
+import { BouquetResultCard } from "./components/BouquetResultCard";
+import { PhotoAnalyzeForm } from "./components/PhotoAnalyzeForm";
 import { ResultCard } from "./components/ResultCard";
+
+type Mode = "text" | "photo";
+
+const DEFAULT_PHOTO_QUERY =
+  "Проверь этот букет на безопасность для кошки";
 
 function FlowerIcon() {
   return (
@@ -23,12 +35,17 @@ function FlowerIcon() {
 }
 
 export default function App() {
+  const [mode, setMode] = useState<Mode>("text");
   const [query, setQuery] = useState("");
+  const [photoQuery, setPhotoQuery] = useState(DEFAULT_PHOTO_QUERY);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<AskResponse | null>(null);
+  const [textResult, setTextResult] = useState<AskResponse | null>(null);
+  const [photoResult, setPhotoResult] = useState<PhotoAnalyzeResponse | null>(
+    null,
+  );
 
-  async function handleSubmit() {
+  async function handleTextSubmit() {
     const q = query.trim();
     if (!q) return;
 
@@ -37,14 +54,40 @@ export default function App() {
 
     try {
       const data = await askAdvisor(q);
-      setResult(data);
+      setTextResult(data);
+      setPhotoResult(null);
     } catch (e) {
-      setResult(null);
+      setTextResult(null);
       setError(e instanceof Error ? e.message : "Не удалось получить ответ");
     } finally {
       setLoading(false);
     }
   }
+
+  async function handlePhotoSubmit(file: File) {
+    const q = photoQuery.trim() || DEFAULT_PHOTO_QUERY;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await analyzeBouquetPhoto(file, q);
+      setPhotoResult(data);
+      setTextResult(null);
+    } catch (e) {
+      setPhotoResult(null);
+      setError(e instanceof Error ? e.message : "Не удалось проанализировать фото");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function switchMode(next: Mode) {
+    setMode(next);
+    setError(null);
+  }
+
+  const hasResult = mode === "text" ? textResult : photoResult;
 
   return (
     <div className="mx-auto min-h-screen max-w-2xl px-4 py-10 sm:px-6">
@@ -64,13 +107,47 @@ export default function App() {
         </p>
       </header>
 
+      <div className="mb-6 flex justify-center gap-2">
+        <button
+          type="button"
+          onClick={() => switchMode("text")}
+          className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+            mode === "text"
+              ? "bg-pastel-rose text-pastel-plum"
+              : "border border-pastel-chip-border bg-white/80 text-pastel-muted hover:border-pastel-rose"
+          }`}
+        >
+          Текст
+        </button>
+        <button
+          type="button"
+          onClick={() => switchMode("photo")}
+          className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+            mode === "photo"
+              ? "bg-pastel-rose text-pastel-plum"
+              : "border border-pastel-chip-border bg-white/80 text-pastel-muted hover:border-pastel-rose"
+          }`}
+        >
+          Фото букета
+        </button>
+      </div>
+
       <main className="space-y-6">
-        <AskForm
-          query={query}
-          loading={loading}
-          onQueryChange={setQuery}
-          onSubmit={handleSubmit}
-        />
+        {mode === "text" ? (
+          <AskForm
+            query={query}
+            loading={loading}
+            onQueryChange={setQuery}
+            onSubmit={handleTextSubmit}
+          />
+        ) : (
+          <PhotoAnalyzeForm
+            query={photoQuery}
+            loading={loading}
+            onQueryChange={setPhotoQuery}
+            onSubmit={handlePhotoSubmit}
+          />
+        )}
 
         {loading && (
           <div className="flex justify-center py-8">
@@ -88,14 +165,20 @@ export default function App() {
           </div>
         )}
 
-        {!loading && !result && !error && (
+        {!loading && !hasResult && !error && (
           <p className="text-center text-pastel-muted">
-            Задайте вопрос о букете и питомце — мы проверим локальную базу,
-            внешние источники и при необходимости веб-поиск
+            {mode === "text"
+              ? "Задайте вопрос о букете и питомце — мы проверим локальную базу, внешние источники и при необходимости веб-поиск"
+              : "Загрузите фото букета — мы распознаем цветы и проверим безопасность для питомца"}
           </p>
         )}
 
-        {result && !loading && <ResultCard result={result} />}
+        {mode === "text" && textResult && !loading && (
+          <ResultCard result={textResult} />
+        )}
+        {mode === "photo" && photoResult && !loading && (
+          <BouquetResultCard result={photoResult} />
+        )}
       </main>
 
       <footer className="mt-12 text-center text-xs text-pastel-muted">

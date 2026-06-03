@@ -2,6 +2,7 @@ import "./env.js";
 import cors from "cors";
 import express from "express";
 import { askRouter } from "./routes/ask.js";
+import { analyzePhotoRouter } from "./routes/analyzePhoto.js";
 import { logLangSmithStatus } from "./lib/langsmith.js";
 
 const app = express();
@@ -15,6 +16,7 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.use("/api", askRouter);
+app.use("/api", analyzePhotoRouter);
 
 app.listen(port, () => {
   logLangSmithStatus();
