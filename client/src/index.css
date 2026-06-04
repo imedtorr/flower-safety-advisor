@@ -10,3 +10,11 @@ body {
   background: linear-gradient(160deg, #fff8f5 0%, #f5eef8 50%, #eef6f0 100%);
   background-attachment: fixed;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-twinkle,
+  .animate-twinkle-slow {
+    animation: none;
+    opacity: 0.2;
+  }
+}

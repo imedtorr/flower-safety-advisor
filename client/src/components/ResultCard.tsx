@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { AskResponse } from "../api/client";
+import { GraphPathChips } from "./GraphPathChips";
 import { RiskBadge } from "./RiskBadge";
 import { SourceBadge } from "./SourceBadge";
 
@@ -12,8 +13,23 @@ export function ResultCard({ result }: { result: AskResponse }) {
   return (
     <article className="rounded-3xl border border-pastel-chip-border bg-white/90 p-6 shadow-soft">
       <div className="mb-4 flex flex-wrap items-center gap-2">
+        {result.rejected && (
+          <span className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-xs font-medium text-rose-800">
+            запрос отклонён
+          </span>
+        )}
         <RiskBadge level={result.riskLevel} />
-        <SourceBadge source={result.source} />
+        {!result.rejected && <SourceBadge source={result.source} />}
+        {result.retryCount != null && result.retryCount > 0 && (
+          <span className="rounded-full border border-pastel-chip-border bg-pastel-chip px-2.5 py-0.5 text-xs text-pastel-muted">
+            повторов ответа: {result.retryCount}
+          </span>
+        )}
+        {result.quality != null && result.quality > 0 && (
+          <span className="rounded-full border border-pastel-chip-border bg-pastel-chip px-2.5 py-0.5 text-xs text-pastel-muted">
+            качество: {result.quality}/10
+          </span>
+        )}
       </div>
 
       <div className="whitespace-pre-wrap leading-relaxed text-pastel-plum">
@@ -47,6 +63,8 @@ export function ResultCard({ result }: { result: AskResponse }) {
           )}
         </div>
       )}
+
+      <GraphPathChips path={result.graphPath} />
     </article>
   );
 }

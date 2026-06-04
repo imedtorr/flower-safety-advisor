@@ -1,10 +1,14 @@
 import { Router } from "express";
 import { runAdvisor } from "../graph.js";
+import { sanitizeUserQuery } from "../lib/queryGuard.js";
 
 export const askRouter = Router();
 
 askRouter.post("/ask", async (req, res) => {
-  const query = typeof req.body?.query === "string" ? req.body.query.trim() : "";
+  const query =
+    typeof req.body?.query === "string"
+      ? sanitizeUserQuery(req.body.query)
+      : "";
 
   if (!query) {
     res.status(400).json({ error: "Поле query обязательно" });

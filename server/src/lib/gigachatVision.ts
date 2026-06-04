@@ -17,6 +17,7 @@ const VisionFlowerSchema = z.object({
 const VisionResultSchema = z.object({
   flowers: z.array(VisionFlowerSchema).max(7),
   notes: z.string().optional(),
+  isFlowerPhoto: z.boolean().default(true),
 });
 
 export type DetectedFlower = z.infer<typeof VisionFlowerSchema>;
@@ -33,7 +34,9 @@ function loadKnownSlugs(): string[] {
     slug: string;
     names: string[];
   }[];
-  return data.map((f) => `${f.slug} (${f.names.find((n) => /[а-яё]/i.test(n)) ?? f.names[0]})`);
+  return data.map(
+    (f) => `${f.slug} (${f.names.find((n) => /[а-яё]/i.test(n)) ?? f.names[0]})`,
+  );
 }
 
 export function createGigaChatVisionClient(): GigaChat {
@@ -72,25 +75,33 @@ export async function identifyFlowersFromImage(
   const client = createGigaChatVisionClient();
   const knownSlugs = loadKnownSlugs().join(", ");
 
-  const systemPrompt = `Ты — ботаник, распознающий цветы на фотографиях букетов.
+  const systemPrompt = `Ты — ботаник, распознающий ЖИВЫЕ цветы на фотографиях букетов и растений.
 Ответь ТОЛЬКО валидным JSON без markdown:
-{"flowers":[{"slug":"...","labelRu":"...","confidence":0.0}],"notes":"..."}
+{"isFlowerPhoto":true,"flowers":[{"slug":"...","labelRu":"...","confidence":0.0}],"notes":"..."}
 
 Правила:
-- Перечисли до 7 видимых цветов/зелени в букете (основные, не мелочь).
-- slug: если растение из списка — используй точный slug; иначе латинский slug (snake_case) или "unknown_plant".
+- СНАЧАЛА реши, есть ли на изображении реальные цветы, букет, горшечное растение или срезанные растения.
+- isFlowerPhoto: false — если это скриншот, код, интерфейс, документ, мем, еда, животное, пейзаж без букета, схема, рисунок, или ты не видишь живых растений. Тогда flowers ДОЛЖЕН быть пустым массивом [].
+- isFlowerPhoto: true — только если явно видны цветы/зелень букета или комнатного растения.
+- Не угадывай цветы по цветам пикселей, формам UI или тексту на экране. Не выдумывай slug.
+- Перечисли до 7 видимых цветов/зелени (основные, не мелочь).
+- slug: если растение из списка — точный slug; иначе snake_case латиницей или "unknown_plant".
 - labelRu: русское название.
-- confidence: 0.0–1.0 (насколько уверен в определении).
-- notes: кратко на русском, если что-то неразборчиво.
+- confidence: 0.0–1.0; ставь < 0.5, если сомневаешься.
+- notes: кратко на русском; при isFlowerPhoto:false объясни, что на фото (скриншот, код и т.д.).
 
 Известные slug в базе: ${knownSlugs}`;
+
+  const userContent = `${userQuery}
+
+Проверь только реальные растения на фото. Если это не фото букета/цветов — isFlowerPhoto: false, flowers: [].`;
 
   const response = await client.chat({
     messages: [
       { role: "system", content: systemPrompt },
       {
         role: "user",
-        content: userQuery,
+        content: userContent,
         attachments: [fileId],
       },
     ],
@@ -98,7 +109,7 @@ export async function identifyFlowersFromImage(
   });
 
   const raw =
-    response.choices[0]?.message?.content?.trim() ?? '{"flowers":[]}';
+    response.choices[0]?.message?.content?.trim() ?? '{"flowers":[],"isFlowerPhoto":false}';
 
   const jsonMatch = raw.match(/\{[\s\S]*\}/);
   const jsonStr = jsonMatch ? jsonMatch[0] : raw;
@@ -108,6 +119,10 @@ export async function identifyFlowersFromImage(
     return VisionResultSchema.parse(parsed);
   } catch (e) {
     console.error("vision JSON parse error:", e, raw);
-    return { flowers: [], notes: "Не удалось распознать цветы на фото." };
+    return {
+      flowers: [],
+      isFlowerPhoto: false,
+      notes: "Не удалось распознать изображение. Загрузите фото букета.",
+    };
   }
 }

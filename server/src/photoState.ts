@@ -49,6 +49,14 @@ export const PhotoGraphState = Annotation.Root({
     reducer: (_, next) => next,
     default: () => "",
   }),
+  visionQuality: Annotation<"ok" | "low" | "empty" | "not_flower">({
+    reducer: (_, next) => next,
+    default: () => "empty",
+  }),
+  graphPath: Annotation<string[]>({
+    reducer: (prev, next) => [...prev, ...next],
+    default: () => [],
+  }),
 });
 
 export type PhotoGraphStateType = typeof PhotoGraphState.State;

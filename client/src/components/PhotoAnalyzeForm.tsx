@@ -69,9 +69,12 @@ export function PhotoAnalyzeForm({
             className="mx-auto max-h-56 rounded-xl object-contain"
           />
         ) : (
-          <p className="text-pastel-muted">
-            Нажмите, чтобы выбрать фото букета (JPEG, PNG, WebP, до 5 МБ)
-          </p>
+          <div className="space-y-1 text-pastel-muted">
+            <p>Нажмите, чтобы выбрать фото букета (JPEG, PNG, WebP, до 5 МБ)</p>
+            <p className="text-xs">
+              Только снимки живых цветов. Скриншоты, код и документы не анализируются.
+            </p>
+          </div>
         )}
         {file && (
           <p className="mt-2 text-sm text-pastel-plum">{file.name}</p>
@@ -87,28 +90,30 @@ export function PhotoAnalyzeForm({
         disabled={loading}
       />
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col items-center gap-2">
         {EXAMPLES.map((ex) => (
           <button
             key={ex}
             type="button"
             onClick={() => onQueryChange(ex)}
             disabled={loading}
-            className="rounded-full border border-pastel-chip-border bg-pastel-chip px-3 py-1.5 text-sm text-pastel-plum transition hover:border-pastel-rose hover:bg-pastel-blush disabled:opacity-50"
+            className="max-w-full rounded-full border border-pastel-chip-border bg-pastel-chip px-4 py-1.5 text-center text-sm text-pastel-plum transition hover:border-pastel-rose hover:bg-pastel-blush disabled:opacity-50"
           >
-            {ex.length > 42 ? `${ex.slice(0, 42)}…` : ex}
+            {ex}
           </button>
         ))}
       </div>
 
-      <button
-        type="button"
-        onClick={handleSubmit}
-        disabled={loading || !file}
-        className="w-full rounded-2xl bg-pastel-rose px-6 py-3 text-lg font-semibold text-pastel-plum transition hover:bg-pastel-rose-hover disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-      >
-        {loading ? "Анализируем фото…" : "Проверить букет"}
-      </button>
+      <div className="flex justify-center">
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={loading || !file}
+          className="rounded-2xl bg-pastel-rose px-8 py-3 text-lg font-semibold text-pastel-plum transition hover:bg-pastel-rose-hover disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {loading ? "Анализируем фото…" : "Проверить букет"}
+        </button>
+      </div>
     </div>
   );
 }

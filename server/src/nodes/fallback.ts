@@ -1,3 +1,4 @@
+import { appendGraphPath } from "../lib/graphPath.js";
 import type { GraphStateType } from "../state.js";
 import { formatNormalizedFlower } from "./normalize.js";
 
@@ -18,10 +19,10 @@ export async function fallbackNode(
     "Не вызывайте рвоту самостоятельно без указания врача.",
   ];
 
-  return {
+  return appendGraphPath("fallback", {
     found: true,
     source: "fallback",
     facts,
     riskLevel: "unknown",
-  };
+  }) as Partial<GraphStateType>;
 }

@@ -15,6 +15,12 @@ export interface AskResponse {
   normalized: NormalizedQuery | null;
   riskLevel: RiskLevel;
   facts?: string[];
+  graphPath?: string[];
+  quality?: number;
+  retryCount?: number;
+  queryType?: string;
+  rejected?: boolean;
+  guardVerdict?: "allow" | "injection" | "off_topic";
 }
 
 export interface DetectedFlower {
@@ -42,6 +48,10 @@ export interface PhotoAnalyzeResponse {
   flowerResults: FlowerResultItem[];
   facts?: string[];
   visionNotes?: string | null;
+  graphPath?: string[];
+  visionQuality?: "ok" | "low" | "empty" | "not_flower";
+  rejected?: boolean;
+  guardVerdict?: "allow" | "injection" | "off_topic";
 }
 
 export async function askAdvisor(query: string): Promise<AskResponse> {

@@ -1,6 +1,11 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import multer from "multer";
 import { runPhotoAdvisor } from "../photoGraph.js";
+import {
+  getRejectionAnswer,
+  sanitizeUserQuery,
+  validateUserQuery,
+} from "../lib/queryGuard.js";
 
 const MAX_SIZE = 5 * 1024 * 1024;
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -55,11 +60,30 @@ analyzePhotoRouter.post(
 
     const query =
       typeof req.body?.query === "string" && req.body.query.trim()
-        ? req.body.query.trim()
+        ? sanitizeUserQuery(req.body.query)
         : DEFAULT_QUERY;
 
     if (query.length > 500) {
       res.status(400).json({ error: "Запрос слишком длинный (макс. 500 символов)" });
+      return;
+    }
+
+    const guard = validateUserQuery(query);
+    if (guard.verdict !== "allow") {
+      res.json({
+        answer: getRejectionAnswer(guard),
+        source: "fallback",
+        pet: "cat",
+        riskLevel: "unknown",
+        detectedFlowers: [],
+        flowerResults: [],
+        facts: [],
+        visionNotes: null,
+        graphPath: ["guardQuery", "rejectQuery"],
+        visionQuality: "empty",
+        rejected: true,
+        guardVerdict: guard.verdict,
+      });
       return;
     }
 

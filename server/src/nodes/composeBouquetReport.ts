@@ -1,6 +1,7 @@
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { inferRiskFromAnswer } from "../lib/answerRisk.js";
 import { createGigaChat } from "../lib/gigachat.js";
+import { appendGraphPath } from "../lib/graphPath.js";
 import type { PhotoGraphStateType } from "../photoState.js";
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -11,9 +12,26 @@ const SOURCE_LABELS: Record<string, string> = {
   mixed: "смешанные источники",
 };
 
+function buildSkippedVisionAnswer(state: PhotoGraphStateType): string {
+  const petLabel = state.pet === "dog" ? "собаки" : "кошки";
+  const body = state.facts.join("\n\n");
+  return `Не удалось проанализировать букет для ${petLabel}.
+
+${body}
+
+Это справочная информация, не замена консультации ветеринара.`;
+}
+
 export async function composeBouquetReportNode(
   state: PhotoGraphStateType,
 ): Promise<Partial<PhotoGraphStateType>> {
+  if (state.visionQuality !== "ok") {
+    return appendGraphPath("composeBouquetReport", {
+      answer: buildSkippedVisionAnswer(state),
+      riskLevel: "unknown",
+    }) as Partial<PhotoGraphStateType>;
+  }
+
   const petLabel = state.pet === "dog" ? "собака" : "кошка";
   const sourceLabel = state.source
     ? (SOURCE_LABELS[state.source] ?? state.source)
@@ -58,7 +76,10 @@ ${state.facts.join("\n")}`;
 
     const riskLevel = inferRiskFromAnswer(answer, state.riskLevel);
 
-    return { answer, riskLevel };
+    return appendGraphPath("composeBouquetReport", {
+      answer,
+      riskLevel,
+    }) as Partial<PhotoGraphStateType>;
   } catch (e) {
     console.error("composeBouquetReport GigaChat error:", e);
     const fallbackAnswer = `Отчёт по букету для ${petLabel}:
@@ -69,6 +90,9 @@ ${state.facts.join("\n\n")}
 
 Это справочная информация, не замена консультации ветеринара.`;
 
-    return { answer: fallbackAnswer, riskLevel: state.riskLevel };
+    return appendGraphPath("composeBouquetReport", {
+      answer: fallbackAnswer,
+      riskLevel: state.riskLevel,
+    }) as Partial<PhotoGraphStateType>;
   }
 }

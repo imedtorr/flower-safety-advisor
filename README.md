@@ -8,23 +8,32 @@
 
 ```
 Пользователь → React UI → POST /api/ask → LangGraph
-  normalize → localDb → externalApi → tavily → fallback → composeAnswer (GigaChat)
+  guardQuery → [rejectQuery] | analyzeQuery → [multiFlowerHint] → normalize → localDb
+    → externalApi → tavily → fallback (каскад по found)
+  → composeAnswer → qualityCheck → [composeAnswerRetry] → END
 ```
 
 **Фото букета:**
 
 ```
 Пользователь → React UI → POST /api/analyze-photo → LangGraph (photo)
-  visionIdentify (GigaChat-Pro) → bouquetLookup → composeBouquetReport
+  visionIdentify (GigaChat-Pro)
+    → bouquetLookup (уверенное распознавание)
+    → visionFallback (пусто / низкая уверенность)
+  → composeBouquetReport
 ```
 
 | Шаг | Источник |
 |-----|----------|
-| 1 | Нормализация (синонимы + GigaChat при необходимости) |
+| 0 | Проверка темы и защита от prompt injection |
+| 1 | Анализ запроса (тип, сложность) + нормализация |
 | 2 | Локальная JSON-база с курируемыми данными |
 | 3 | ASPCA JSON API (GitHub) |
 | 4 | Tavily веб-поиск |
 | 5 | Fallback + финальный ответ GigaChat |
+| 6 | Проверка качества ответа и повтор при необходимости |
+
+В UI отображаются badge источника, риска, **маршрут узлов LangGraph** (`graphPath`), для текста — качество и число повторов; для фото — качество распознавания (`visionQuality`).
 
 ## Требования
 
@@ -50,14 +59,17 @@ npm run dev
 
 ## Демо для защиты
 
-| Запрос | Ожидаемый источник |
-|--------|-------------------|
-| «Розы и кот на столе» | Локальная БД |
+| Запрос | Ожидаемый результат |
+|--------|---------------------|
+| «Розы и кот на столе» | Локальная БД, `graphPath` без retry |
 | Редкое растение из ASPCA | Внешний API |
 | Экзотический цветок | Веб-поиск / Общие советы |
-| Вкладка «Фото букета» + снимок с розами/лилиями | Vision → local / mixed |
+| «Подробно сравни токсичность лилий и азалий для кошки» | `multiFlowerHint` + при плохом ответе `composeAnswerRetry` в `graphPath` |
+| Вкладка «Фото букета» + чёткий снимок | `visionIdentify → bouquetLookup → composeBouquetReport` |
+| Размытое / пустое фото | `visionIdentify → visionFallback` (без ASPCA/Tavily) |
+| Скриншот, код, не букет | `isFlowerPhoto: false` → `not_flower` → отказ без «угадывания» лилий |
 
-В UI отображается badge источника и уровня риска.
+В LangSmith при `LANGSMITH_TRACING=true` видны все узлы графа, включая цикл `qualityCheck ↔ composeAnswerRetry`.
 
 ### Анализ фото (curl)
 
@@ -72,6 +84,7 @@ curl -X POST http://localhost:3001/api/analyze-photo \
 - `server/` — Express + LangGraph + GigaChat
 - `client/` — React + Vite + Tailwind (пастельная тема)
 - `data/flowers.json` — локальная база
+- `langGraph/` — учебные примеры курса (базовый, условный, продвинутый граф)
 
 ## Переменные окружения
 

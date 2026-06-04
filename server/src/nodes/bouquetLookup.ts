@@ -6,6 +6,7 @@ import {
   lookupTavilyBouquet,
   mergeLookupRisk,
 } from "../lib/flowerLookup.js";
+import { appendGraphPath } from "../lib/graphPath.js";
 import { mergeRisk } from "../lib/risk.js";
 import { getFlowerDisplayName } from "../lib/synonyms.js";
 import type { FlowerResultItem, PhotoGraphStateType } from "../photoState.js";
@@ -15,18 +16,6 @@ export async function bouquetLookupNode(
   state: PhotoGraphStateType,
 ): Promise<Partial<PhotoGraphStateType>> {
   const { detectedFlowers, pet } = state;
-
-  if (detectedFlowers.length === 0) {
-    return {
-      flowerResults: [],
-      facts: [
-        state.visionNotes ??
-          "На фото не удалось уверенно определить цветы. Уточните состав букета текстом.",
-      ],
-      riskLevel: "unknown" as RiskLevel,
-      source: "fallback",
-    };
-  }
 
   const localResults = await Promise.all(
     detectedFlowers.map(async (d) => {
@@ -104,10 +93,10 @@ export async function bouquetLookupNode(
     allFacts.unshift(`Заметки распознавания: ${state.visionNotes}`);
   }
 
-  return {
+  return appendGraphPath("bouquetLookup", {
     flowerResults,
     facts: allFacts,
     riskLevel,
     source,
-  };
+  }) as Partial<PhotoGraphStateType>;
 }

@@ -9,6 +9,7 @@ import { AskForm } from "./components/AskForm";
 import { BouquetResultCard } from "./components/BouquetResultCard";
 import { PhotoAnalyzeForm } from "./components/PhotoAnalyzeForm";
 import { ResultCard } from "./components/ResultCard";
+import { SideFlowerDecor } from "./components/SideFlowerDecor";
 
 type Mode = "text" | "photo";
 
@@ -90,7 +91,10 @@ export default function App() {
   const hasResult = mode === "text" ? textResult : photoResult;
 
   return (
-    <div className="mx-auto min-h-screen max-w-2xl px-4 py-10 sm:px-6">
+    <div className="relative min-h-screen">
+      <SideFlowerDecor />
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-2xl flex-col px-4 py-10 sm:px-6">
+      <div className="flex-1">
       <header className="mb-8 text-center">
         <div className="mb-3 flex justify-center gap-2">
           <FlowerIcon />
@@ -180,11 +184,13 @@ export default function App() {
           <BouquetResultCard result={photoResult} />
         )}
       </main>
+      </div>
 
-      <footer className="mt-12 text-center text-xs text-pastel-muted">
+      <footer className="shrink-0 pt-8 text-center text-xs text-pastel-muted">
         Справочная информация, не замена консультации ветеринара. При
         подозрении на отравление обращайтесь к врачу немедленно.
       </footer>
+      </div>
     </div>
   );
 }

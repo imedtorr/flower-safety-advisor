@@ -7,12 +7,12 @@ import { appendGraphPath } from "../lib/graphPath.js";
 import { inferRiskFromAnswer } from "../lib/answerRisk.js";
 import type { GraphStateType } from "../state.js";
 
-export async function composeAnswerNode(
+export async function composeAnswerRetryNode(
   state: GraphStateType,
 ): Promise<Partial<GraphStateType>> {
   try {
     const llm = createGigaChat();
-    const resp = await llm.invoke(buildComposeMessages(state, false));
+    const resp = await llm.invoke(buildComposeMessages(state, true));
     const answer =
       typeof resp.content === "string"
         ? resp.content
@@ -20,16 +20,18 @@ export async function composeAnswerNode(
 
     const riskLevel = inferRiskFromAnswer(answer, state.riskLevel);
 
-    return appendGraphPath("composeAnswer", {
+    return appendGraphPath("composeAnswerRetry", {
       answer,
       riskLevel,
+      retryCount: state.retryCount + 1,
       processingStage: "composed",
     }) as Partial<GraphStateType>;
   } catch (e) {
-    console.error("composeAnswer GigaChat error:", e);
-    return appendGraphPath("composeAnswer", {
+    console.error("composeAnswerRetry GigaChat error:", e);
+    return appendGraphPath("composeAnswerRetry", {
       answer: buildComposeFallbackAnswer(state),
       riskLevel: state.riskLevel,
+      retryCount: state.retryCount + 1,
       processingStage: "composed",
     }) as Partial<GraphStateType>;
   }

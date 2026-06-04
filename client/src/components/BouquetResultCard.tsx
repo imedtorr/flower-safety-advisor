@@ -1,7 +1,9 @@
 import { useState } from "react";
 import type { PhotoAnalyzeResponse } from "../api/client";
+import { GraphPathChips } from "./GraphPathChips";
 import { RiskBadge } from "./RiskBadge";
 import { SourceBadge } from "./SourceBadge";
+import { VisionQualityBadge } from "./VisionQualityBadge";
 
 const PET_LABELS = { cat: "кошка", dog: "собака" } as const;
 
@@ -11,8 +13,14 @@ export function BouquetResultCard({ result }: { result: PhotoAnalyzeResponse }) 
   return (
     <article className="rounded-3xl border border-pastel-chip-border bg-white/90 p-6 shadow-soft">
       <div className="mb-4 flex flex-wrap items-center gap-2">
+        {result.rejected && (
+          <span className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-xs font-medium text-rose-800">
+            запрос отклонён
+          </span>
+        )}
         <RiskBadge level={result.riskLevel} />
-        <SourceBadge source={result.source} />
+        {!result.rejected && <SourceBadge source={result.source} />}
+        <VisionQualityBadge quality={result.visionQuality} />
         <span className="text-sm text-pastel-muted">
           Питомец: {PET_LABELS[result.pet]}
         </span>
@@ -78,6 +86,8 @@ export function BouquetResultCard({ result }: { result: PhotoAnalyzeResponse }) 
           )}
         </div>
       )}
+
+      <GraphPathChips path={result.graphPath} />
     </article>
   );
 }

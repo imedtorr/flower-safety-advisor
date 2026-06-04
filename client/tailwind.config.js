@@ -31,6 +31,16 @@ export default {
       boxShadow: {
         soft: "0 8px 32px rgba(180, 140, 160, 0.12)",
       },
+      keyframes: {
+        twinkle: {
+          "0%, 100%": { opacity: "0.14" },
+          "50%": { opacity: "0.42" },
+        },
+      },
+      animation: {
+        twinkle: "twinkle 5s ease-in-out infinite",
+        "twinkle-slow": "twinkle 7s ease-in-out infinite",
+      },
     },
   },
   plugins: [],
